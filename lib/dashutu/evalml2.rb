@@ -3,6 +3,10 @@ class Fixnum
     self
   end
 
+  def name
+    self
+  end
+
   def to_ml2
     "#{self} evalto #{self} by E-Int {};"
   end
@@ -10,6 +14,10 @@ end
 
 class TrueClass
   def value
+    self
+  end
+
+  def name
     self
   end
 
@@ -23,6 +31,10 @@ class FalseClass
     self
   end
 
+  def name
+    self
+  end
+
   def to_ml2
     "#{self} evalto #{self} by E-Bool {};"
   end
@@ -33,6 +45,10 @@ module Dashutu
     class Environment
       def initialize
         @var = []
+      end
+
+      def var
+        @var
       end
 
       def var!(x, y)
@@ -52,7 +68,7 @@ module Dashutu
 
     class EBase < Struct.new(:e1, :e2)
       def var!(env)
-        @env = env
+        @env = env.clone
       end
 
       def lastline
@@ -67,10 +83,16 @@ module Dashutu
         end
       end
 
+      def prepare
+        e1.var! @env if e1.is_a? Var
+        e2.var! @env if e2.is_a? Var
+      end
+
       def to_ml2
+        prepare
         e3 = apply
         return (
-          env_s + "#{e1.value} #{op} #{e2.value} evalto #{e3} {\n" +
+          env_s + "#{e1.name} #{op} #{e2.name} evalto #{e3} {\n" +
           "  #{env_s}#{e1.to_ml2}\n" +
           "  #{env_s}#{e2.to_ml2}\n" +
           "  #{lastline}\n" +
@@ -119,6 +141,61 @@ module Dashutu
 
       def apply
         e1.value - e2.value
+      end
+    end
+
+    class Var
+      def initialize k
+        @key = k
+      end
+
+      def name
+        @key
+      end
+
+      def value
+        _, v = search
+        return v
+      end
+
+      def var! env
+        @env = env
+      end
+
+      def env_s
+        if !@env.nil?
+          @env.to_ml2
+        else
+          "|- "
+        end
+      end
+
+      def var1?
+        k, v = @env.var[-1]
+        k == @key
+      end
+
+      def search
+        @env.var.each do |k, v|
+          return k, v if @key == k
+        end
+      end
+
+      def to_ml2
+        if var1?
+          k, v = @env.var[-1]
+          env_s + "#{k} evalto #{v} by E-Var1 {};"
+        else
+          v2 = Var.new @key
+          env = @env.clone
+          env.var.pop
+          v2.var! env
+          k, v = search
+
+          env_s + "#{k} evalto #{v} by E-Var2 {\n" +
+            "  " + v2.to_ml2 + "\n" +
+          "}"
+        end
       end
     end
   end
