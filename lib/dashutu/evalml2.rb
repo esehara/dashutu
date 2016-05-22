@@ -98,6 +98,21 @@ module Dashutu
         }
       end
 
+      def eminus(e1, e2, value=false)
+        -> {e1 = to_var(e1)
+            e2 = to_var(e2)
+            result = e1.ml2_value - e2.ml2_value
+            exp = "#{env} #{e1.ml2_value} - #{e2.ml2_value} evalto #{result}"
+            return exp + " by E-Minus ", result  if value
+            return result if debug
+
+            to_derivation(
+              "#{e1.lastline} #{e1.ml2_name} , #{e2.lastline} #{e2.ml2_name} , #{e1.ml2_value} plus #{e2.ml2_value} is #{result} by B-Plus\n",
+              "#{exp}\n",
+              " by E-Minus ")
+        }
+      end
+
       def eplus(e1, e2, value=false)
         -> {e1 = to_var(e1)
             e2 = to_var(e2)
@@ -113,14 +128,18 @@ module Dashutu
         }
       end
 
-      def let(name, e1, e2)
-        exp1, e1 = e1[]
+      def let(name, e1, e2, value=false)
+        if e1.is_a? Proc
+          exp1, e1 = e1[]
+        end
         e1 = to_var(e1)
         prev_env = @env.clone
         add(name, e1)
-
-        exp2, e2 = e2[]
+        if e2.is_a? Proc
+          exp2, e2 = e2[]
+        end
         e2 = to_var(e2)
+        return e2 if value
         return @env if debug
 
         to_derivation(
@@ -134,7 +153,7 @@ module Dashutu
         if x.is_a? String
           x.ml2_value = @env[x]
         end
-        x
+        return x
       end
     end
   end
