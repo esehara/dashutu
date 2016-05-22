@@ -3,15 +3,30 @@ class Fixnum
     self
   end
 
-  def var!
-    @env = env
-  end
-
   def to_ml2
-    @env.to_s + "#{self} evalto #{self} by E-Int {};"
+    "#{self} evalto #{self} by E-Int {};"
   end
 end
 
+class TrueClass
+  def value
+    self
+  end
+
+  def to_ml2
+    "#{self} evalto #{self} by E-Bool {};"
+  end
+end
+
+class FalseClass
+  def value
+    self
+  end
+
+  def to_ml2
+    "#{self} evalto #{self} by E-Bool {};"
+  end
+end
 
 module Dashutu
   module ML2
@@ -25,13 +40,18 @@ module Dashutu
         self
       end
 
-      def to_s
-        @var.map {|k, v| "#{k} = #{v}"}.join(" , ") + "|-"
+      def eval(exp)
+        exp.var! self
+        exp.to_ml2
+      end
+
+      def to_ml2
+        @var.map {|k, v| "#{k} = #{v}"}.join(" , ") + " |- "
       end
     end
 
     class EBase < Struct.new(:e1, :e2)
-      def var!
+      def var!(env)
         @env = env
       end
 
@@ -39,12 +59,20 @@ module Dashutu
         "#{e1.value} #{lastop} #{e2.value} is #{apply} #{lastby} {};"
       end
 
+      def env_s
+        if !@env.nil?
+          @env.to_ml2
+        else
+          "|- "
+        end
+      end
+
       def to_ml2
         e3 = apply
         return (
-          "#{e1.value} #{op} #{e2.value} evalto #{e3} {\n" +
-          "  #{e1.to_ml2}\n" +
-          "  #{e2.to_ml2}\n" +
+          env_s + "#{e1.value} #{op} #{e2.value} evalto #{e3} {\n" +
+          "  #{env_s}#{e1.to_ml2}\n" +
+          "  #{env_s}#{e2.to_ml2}\n" +
           "  #{lastline}\n" +
           "}")
       end
