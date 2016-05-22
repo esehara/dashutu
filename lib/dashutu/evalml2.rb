@@ -51,6 +51,10 @@ module Dashutu
         @var
       end
 
+      def var_clone
+        @var = @var.clone
+      end
+
       def var!(x, y)
         @var << [x, y]
         self
@@ -188,6 +192,7 @@ module Dashutu
         else
           v2 = Var.new @key
           env = @env.clone
+          env.var_clone
           env.var.pop
           v2.var! env
           k, v = search
