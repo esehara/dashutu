@@ -1,5 +1,6 @@
+require "dashutu/base"
+
 module Dashutu
-  include OperatorBase
   module M1
     class BLT < OperatorBase
       attr_accessor :i3

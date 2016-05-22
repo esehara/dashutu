@@ -1,11 +1,20 @@
 require 'spec_helper'
 
 describe Dashutu do
-  it 'has a version number' do
-    expect(Dashutu::VERSION).not_to be nil
-  end
+  describe ML2 do
+    it '#etimes' do
+      env = ML2::Env.new
+      env.test!
+      env.add("x", 3)
+      expect(env.etimes("x", "x")).to eq 9
+    end
 
-  it 'does something useful' do
-    expect(false).to eq(true)
+    it "x = 3 |- let x = x * 2 in x + x evalto 12" do
+      env = ML2::Env.new
+      env.test!
+      env.add("x", 3)
+      v = env.let("x", env.etimes("x", 2), env.eplus("x", "x"))
+      expect(v["x"]).to eq 6
+    end
   end
 end
