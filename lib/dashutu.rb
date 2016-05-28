@@ -22,6 +22,7 @@ def linemaker(l, s)
 end
 
 module Dashutu
+  extend ML2
   class PZero
     def initialize(n)
       @n = n
