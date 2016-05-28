@@ -70,6 +70,11 @@ module Dashutu
       end
     end
 
+    class LETIN < Struct.new(:name, :e1, :e2)
+      def to_ml2
+      end
+    end
+    
     class EBase < Struct.new(:e1, :e2)
       def var!(env)
         @env = env.clone
