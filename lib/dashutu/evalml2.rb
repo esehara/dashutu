@@ -127,6 +127,36 @@ module ML2
     end
   end
 
+  class CALL
+    def initialize(name, params)
+      @name = name
+      @param = params
+    end
+
+    def ml2_s
+      "#{@name} #{@param}"
+    end
+
+    def to_s
+      ml2_s
+    end
+  end
+  
+  class FUN
+    def initialize(name, exp)
+      @name = name
+      @exp = exp
+    end
+
+    def env= env
+      @env = env
+    end
+
+    def ml2_s
+      "fun #{@name} -> #{@exp.ml2_exp}"
+    end
+  end
+
   class ELETIN < ML2EBase
     def initialize(name, e1, e2, env)
       e1.env = env if !e1.is_a? Fixnum
@@ -260,6 +290,10 @@ module ML2
     def env! value
       @env = Env.new.env! value
       self
+    end
+
+    def ml2_exp
+      ml2_s
     end
   end
 

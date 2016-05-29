@@ -1,5 +1,11 @@
 require 'spec_helper'
 
+def result s
+  puts "-------------------------"
+  puts s.ml2_s
+  puts "-------------------------"
+end
+
 describe Dashutu do
   describe ML2 do
     describe 'x = 3 |- let x = x * 2 in x + x' do
@@ -43,6 +49,17 @@ describe Dashutu do
       puts "----------------------"
       puts s.ml2_s
       puts "----------------------"
+    end
+
+    it 'let sq = fun x -> x * x in sq 3 + sq + 4 evalto 25' do
+      s = ML2::LETIN.new(
+        "sq",
+        ML2::FUN.new("x", ML2::TIMES.new("x", "x")),
+        ML2::PLUS.new(
+          ML2::CALL.new("sq", 3),
+          ML2::CALL.new("sq", 4)))
+      puts s.ml2_s
+      result s.step
     end
   end
 end
