@@ -51,7 +51,7 @@ describe Dashutu do
       puts "----------------------"
     end
 
-    it 'let sq = fun x -> x * x in sq 3 + sq + 4 evalto 25' do
+    it 'let sq = fun x -> x * x in sq 3 + sq 4 evalto 25' do
       s = ML2::LETIN.new(
         "sq",
         ML2::FUN.new("x", ML2::TIMES.new("x", "x")),

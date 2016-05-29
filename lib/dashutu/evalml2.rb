@@ -1,3 +1,10 @@
+class String
+  def ml2_value
+    self
+  end
+end
+
+
 class Fixnum
   def ml2_value
     self
@@ -62,6 +69,10 @@ module ML2
       s = @env.map {|k, v| "#{k} = #{v}"}.join(", ")
       return (s.empty? ? "" : s) + " |- "
     end
+
+    def ml2_s_local
+      s = @env.map {|k, v| "#{k}=#{v}"}.join(",")
+    end
   end
 
   class LETIN
@@ -111,6 +122,10 @@ module ML2
     end
 
     def varize e1
+      if e1.is_a?(CALL) && e1.env.nil?
+        env = @env.clone
+        e1.env = env
+      end
       if e1.is_a? String
         return @env.var1 e1 if @env.var1? e1
         return @env.var2 e1 if @env.var2? e1
@@ -128,6 +143,8 @@ module ML2
   end
 
   class CALL
+    attr_accessor :env
+
     def initialize(name, params)
       @name = name
       @param = params
@@ -137,14 +154,41 @@ module ML2
       "#{@name} #{@param}"
     end
 
+    def ml2_exp
+      ml2_s
+    end
+
     def to_s
       ml2_s
     end
+
+    def step
+      EAPP.new(@name, @param, @env)
+    end
+
+    def ml2_value
+      return step.value
+    end
   end
-  
+
+  class EAPP < ML2EBase
+    def initialize(e1, e2, env)
+      @env = env
+      @e1 = varize e1
+      @e2 = varize e2
+      local_env = env.clone
+      local_env.add!(@e1.e2.param, @e2)
+      @e1.e2.exp.env = local_env
+    end
+
+    def value
+      @e1.e2.exp.step.ml2_value
+    end
+  end
+
   class FUN
-    def initialize(name, exp)
-      @name = name
+    def initialize(param, exp)
+      @param = param
       @exp = exp
     end
 
@@ -152,8 +196,41 @@ module ML2
       @env = env
     end
 
+    def step
+      EFUN.new(@param, @exp, @env)
+    end
+
     def ml2_s
       "fun #{@name} -> #{@exp.ml2_exp}"
+    end
+  end
+
+  class EFUN
+    attr_accessor :param, :exp, :env
+    def initialize(param, exp, env)
+      @param = param
+      @exp = exp
+      @env = env
+    end
+
+    def ml2_s_rep
+      "fun #{@param.ml2_value} -> #{@exp.ml2_exp}"
+    end
+    
+    def ml2_s
+      return "#{@env.ml2_s}#{ml2_s_rep} evalto (#{@env.ml2_s_local})[#{ml2_s_rep}] by E-Fun {};"
+    end
+
+    def ml2_exp
+      "fun #{@param} -> #{@exp.ml2_exp}"
+    end
+
+    def ml2_value
+      self
+    end
+
+    def to_s
+      ml2_exp
     end
   end
 
@@ -196,6 +273,11 @@ module ML2
       @env = env
     end
 
+    def e2
+      prepare
+      @e1.e2
+    end
+
     def prepare
       next_env = @env.clone
       next_env.pop!
@@ -223,6 +305,7 @@ module ML2
   end
 
   class Var1
+    attr_accessor :e2
     def initialize(e1, e2, env)
       @e1 = e1
       @e2 = e2
