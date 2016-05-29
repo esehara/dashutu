@@ -132,7 +132,7 @@ module ML2
 
     def ml2_s
       prepare
-      "#{@env.ml2_s}#{@e1} evalto #{@e2} by E-Val2 {\n" +
+      "#{@env.ml2_s}#{@e1} evalto #{@e2} by E-Var2 {\n" +
         "  #{@e1.ml2_s} \n" +
         "\n};"
     end
@@ -154,7 +154,7 @@ module ML2
     end
 
     def ml2_s
-      "#{@env.ml2_s}#{@e1} evalto #{@e2} by E-Val1 {};"
+      "#{@env.ml2_s}#{@e1} evalto #{@e2} by E-Var1 {};"
     end
 
     def ml2_value
@@ -176,7 +176,7 @@ module ML2
       return "#{@env.ml2_s}#{@e1} * #{@e2} evalto #{value} by E-Times {\n" +
              prepare_ml2_s(@e1) +
              prepare_ml2_s(@e2) +
-             "  #{@env.ml2_s}#{@e1} times #{@e2} evalto #{value} by B-Times\n" +
+             "  #{@e1.ml2_value} times #{@e2.ml2_value} is #{value} by B-Times {};\n" +
              "};\n"
     end
   end
@@ -206,7 +206,7 @@ module ML2
       return "#{@env.ml2_s}#{@e1} * #{@e2} evalto #{value} by E-Plus {\n" +
              prepare_ml2_s(@e1) +
              prepare_ml2_s(@e2) +
-             "  #{@env.ml2_s}#{@e1} plus #{@e2} evalto #{value} by B-Plus\n" +
+             "  #{@env.ml2_s}#{@e1.ml2_value} plus #{@e2.ml2_value} is #{value} by B-Plus {};\n" +
              "};\n"
     end
   end
