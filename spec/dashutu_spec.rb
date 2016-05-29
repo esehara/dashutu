@@ -10,6 +10,9 @@ describe Dashutu do
           ML2::PLUS.new("x", "x"))
             .env!([["x", 3]])
         expect(s.ml2_s).to eq('x = 3 |- let x = x * 2 in x + x')
+        puts "-------------------------"
+        puts s.step.ml2_s
+        puts "-------------------------"
       end
 
       it '|- 2 * 2 evalto 4' do
@@ -33,6 +36,13 @@ describe Dashutu do
         puts s.ml2_s
         puts "-------------------------"
       end
+    end
+
+    it 'x = 3 |= x - 3 evalto 0' do
+      s = ML2::MINUS.new("x", 3).env!([["x", 3]]).step
+      puts "----------------------"
+      puts s.ml2_s
+      puts "----------------------"
     end
   end
 end

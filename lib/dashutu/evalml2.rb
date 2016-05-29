@@ -3,8 +3,12 @@ class Fixnum
     self
   end
 
-  def step?
-    false
+  def step
+    self
+  end
+
+  def ml2_exp
+    self
   end
 
   def ml2_s
@@ -35,6 +39,11 @@ module ML2
       Var1.new(k, @env[-1][1], self)
     end
 
+    def add! k, v
+      @env = @env.clone
+      @env << [k, v]
+    end
+
     def pop!
       @env = @env.clone
       @env.pop
@@ -61,7 +70,10 @@ module ML2
       @e1 = e1
       @e2 = e2
       @env = Env.new
-      @step = 0
+    end
+
+    def env=(env)
+      @env = env
     end
 
     def ml2_s
@@ -78,9 +90,7 @@ module ML2
     end
 
     def step
-      next_env = @env.clone
-      @e1 = @e1.env!(@env).step
-      @e2 = @e2.env!(@env).step
+      ELETIN.new(@name, @e1, @e2, @env)
     end
   end
 
@@ -117,6 +127,38 @@ module ML2
     end
   end
 
+  class ELETIN < ML2EBase
+    def initialize(name, e1, e2, env)
+      e1.env = env if !e1.is_a? Fixnum
+      @env = env.clone
+      @e1 = e1.step
+      env = env.clone
+
+      @name = name
+      env.add!(@name, @e1.ml2_value)
+      e2.env = env if !e2.is_a? Fixnum
+      @e2 = e2.step
+    end
+
+    def ml2_s
+      prepare
+      return "#{@env.ml2_s}let #{@name} = #{@e1.ml2_exp } in #{@e2.ml2_exp} evalto #{ml2_value} by E-Let {\n" +
+             prepare_ml2_s(@e1) +
+             prepare_ml2_s(@e2) +
+             "};\n"
+    end
+
+    def ml2_value
+      prepare
+      @e2.ml2_value
+    end
+
+    def ml2_exp
+      prepare
+      "let #{@name} = #{@e1.ml2_exp} in #{@e2.ml2_exp}"
+    end
+  end
+
   class Var2
     def initialize(e1, e2, env)
       @e1 = e1
@@ -141,6 +183,10 @@ module ML2
       @e2
     end
 
+    def ml2_exp
+      to_s
+    end
+
     def to_s
       @e1.to_s
     end
@@ -161,63 +207,145 @@ module ML2
       @e2
     end
 
+    def ml2_exp
+      to_s
+    end
+
     def to_s
-      @e1
+      if @e1.is_a? Var1
+        @e1.to_s
+      else
+        @e1
+      end
     end
   end
 
   class ETIMES < ML2EBase
-    def value
+    def ml2_value
+      prepare
       @e1.ml2_value * @e2.ml2_value
     end
 
     def ml2_s
       prepare
-      return "#{@env.ml2_s}#{@e1} * #{@e2} evalto #{value} by E-Times {\n" +
+      return "#{@env.ml2_s}#{@e1} * #{@e2} evalto #{ml2_value} by E-Times {\n" +
              prepare_ml2_s(@e1) +
              prepare_ml2_s(@e2) +
-             "  #{@e1.ml2_value} times #{@e2.ml2_value} is #{value} by B-Times {};\n" +
+             "  #{@e1.ml2_value} times #{@e2.ml2_value} is #{ml2_value} by B-Times {};\n" +
              "};\n"
+    end
+
+    def ml2_exp
+      prepare
+      "#{@e1.ml2_exp} * #{@e2.ml2_exp}"
     end
   end
 
-  class TIMES < Struct.new(:e1, :e2)
+  class TIMES
+    attr_accessor :env
+
+    def initialize(e1, e2)
+      @e1 = e1
+      @e2 = e2
+    end
+
     def step
-      ETIMES.new(e1, e2, @env)
+      ETIMES.new(@e1, @e2, @env)
     end
 
     def ml2_s
-      "#{e1} * #{e2}"
+      "#{@e1} * #{@e2}"
     end
 
     def env! value
       @env = Env.new.env! value
-      return self
+      self
+    end
+  end
+
+  class EMINUS < ML2EBase
+    def ml2_value
+      prepare
+      @e1.ml2_value - @e2.ml2_value
+    end
+
+    def ml2_s
+      prepare
+      return "#{@env.ml2_s}#{@e1} - #{@e2} evalto #{ml2_value} by E-Minus {\n" +
+             prepare_ml2_s(@e1) +
+             prepare_ml2_s(@e2) +
+             "  #{@e1.ml2_value} minus #{@e2.ml2_value} is #{ml2_value} by B-Minus {};\n" +
+             "};\n"
+    end
+
+    def ml2_exp
+      prepare
+      "#{@e1.ml2_exp} - #{@e2.ml2_exp}"
+    end
+  end
+
+  class MINUS
+    attr_accessor :env
+
+    def initialize e1, e2
+      @e1 = e1
+      @e2 = e2
+    end
+
+    def env! env
+      @env = Env.new.env! env
+      self
+    end
+
+    def step
+      EMINUS.new(@e1, @e2, @env)
+    end
+
+    def ml2_s
+      "#{@e1} - #{@e2}"
     end
   end
 
   class EPLUS < ML2EBase
-     def value
+    def ml2_value
+      prepare
       @e1.ml2_value + @e2.ml2_value
     end
 
     def ml2_s
       prepare
-      return "#{@env.ml2_s}#{@e1} * #{@e2} evalto #{value} by E-Plus {\n" +
+      return "#{@env.ml2_s}#{@e1} + #{@e2} evalto #{ml2_value} by E-Plus {\n" +
              prepare_ml2_s(@e1) +
              prepare_ml2_s(@e2) +
-             "  #{@env.ml2_s}#{@e1.ml2_value} plus #{@e2.ml2_value} is #{value} by B-Plus {};\n" +
+             "  #{@e1.ml2_value} plus #{@e2.ml2_value} is #{ml2_value} by B-Plus {};\n" +
              "};\n"
+    end
+
+    def ml2_exp
+      prepare
+      "#{@e1.ml2_exp} + #{@e2.ml2_exp}"
     end
   end
 
-  class PLUS < Struct.new(:e1, :e2)
+  class PLUS
+    attr_accessor :env
+
+    def initialize e1, e2
+      @e1 = e1
+      @e2 = e2
+    end
+
+    def env! env
+      @env = Env.new.env! env
+      self
+    end
+
     def step
-      EPLUS.new(@e1, @e2)
+      EPLUS.new(@e1, @e2, @env)
     end
 
     def ml2_s
-      "#{e1} + #{e2}"
+      "#{@e1} + #{@e2}"
     end
   end
 end
