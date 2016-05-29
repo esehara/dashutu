@@ -26,6 +26,13 @@ describe Dashutu do
         puts s.ml2_s
         puts "-------------------------"
       end
+
+      it 'x = 3, y = 4 |- x * y evalto 12' do
+        s = ML2::TIMES.new("x", "y").env!([["x", 4], ["y", 3]]).step
+        puts "-------------------------"
+        puts s.ml2_s
+        puts "-------------------------"
+      end
     end
   end
 end
