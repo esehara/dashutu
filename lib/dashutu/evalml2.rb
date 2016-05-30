@@ -179,11 +179,11 @@ module ML2
       @env = env
       @e1 = varize e1
       @e2 = varize e2
-      local_env = env.clone
-      local_env.add!(@e1.e2.param, @e2)
+      local_env = Env.new.env! [[@e1.e2.param, @e2]]
       exp = @e1.e2.exp
       @e1.e2.exp = exp.class.new(exp.e1, exp.e2)
       @e1.e2.exp.env = local_env
+      @local_env = local_env
     end
 
     def ml2_exp
@@ -195,10 +195,12 @@ module ML2
       return "#{@env.ml2_s}#{@e1.ml2_exp} #{@e2.ml2_exp} evalto #{ml2_value} by E-App {\n" +
              prepare_ml2_s(@e1) +
              prepare_ml2_s(@e2) +
+             "  #{@e1.e2.exp.step.ml2_s}\n" + 
              "};\n"
     end
 
     def ml2_value
+      @e1.e2.exp.env = @local_env
       @e1.e2.exp.step.ml2_value
     end
   end
@@ -241,11 +243,11 @@ module ML2
     end
 
     def ml2_s
-      return "#{@env.ml2_s}#{ml2_s_rep} evalto (#{@env.ml2_s_local})[#{ml2_s_rep}] by E-Fun {};"
+      return "#{@env.ml2_s}#{ml2_s_rep} evalto #{ml2_value} by E-Fun {};"
     end
 
     def ml2_exp
-      "(#{@env.ml2_s_local})[fun #{@param} -> #{@exp.ml2_exp}]"
+      ml2_s_rep
     end
 
     def ml2_value
@@ -253,7 +255,7 @@ module ML2
     end
 
     def to_s
-      ml2_exp
+      "(#{@env.ml2_s_local})[#{ml2_s_rep}]"
     end
   end
 
@@ -272,7 +274,7 @@ module ML2
 
     def ml2_s
       prepare
-      return "#{@env.ml2_s}let #{@name} = #{@e1.ml2_exp } in #{@e2.ml2_exp} evalto #{ml2_value} by E-Let {\n" +
+      return "#{@env.ml2_s}let #{@name} = #{@e1.ml2_exp} in #{@e2.ml2_exp} evalto #{ml2_value} by E-Let {\n" +
              prepare_ml2_s(@e1) +
              prepare_ml2_s(@e2) +
              "};\n"
@@ -454,7 +456,7 @@ module ML2
 
     def ml2_s
       prepare
-      return "#{@env.ml2_s}#{@e1} + #{@e2} evalto #{ml2_value} by E-Plus {\n" +
+      return "#{@env.ml2_s}#{@e1.ml2_exp} + #{@e2.ml2_exp} evalto #{ml2_value} by E-Plus {\n" +
              prepare_ml2_s(@e1) +
              prepare_ml2_s(@e2) +
              "  #{@e1.ml2_value} plus #{@e2.ml2_value} is #{ml2_value} by B-Plus {};\n" +
