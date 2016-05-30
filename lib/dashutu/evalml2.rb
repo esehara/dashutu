@@ -190,6 +190,7 @@ module ML2
     def initialize(param, exp)
       @param = param
       @exp = exp
+      @env = Env.new
     end
 
     def env= env
@@ -216,13 +217,13 @@ module ML2
     def ml2_s_rep
       "fun #{@param.ml2_value} -> #{@exp.ml2_exp}"
     end
-    
+
     def ml2_s
       return "#{@env.ml2_s}#{ml2_s_rep} evalto (#{@env.ml2_s_local})[#{ml2_s_rep}] by E-Fun {};"
     end
 
     def ml2_exp
-      "fun #{@param} -> #{@exp.ml2_exp}"
+      "(#{@env.ml2_s_local})[fun #{@param} -> #{@exp.ml2_exp}]"
     end
 
     def ml2_value
@@ -355,7 +356,7 @@ module ML2
   end
 
   class TIMES
-    attr_accessor :env
+    attr_accessor :e1, :e2, :env
 
     def initialize(e1, e2)
       @e1 = e1
@@ -459,6 +460,10 @@ module ML2
 
     def step
       EPLUS.new(@e1, @e2, @env)
+    end
+
+    def ml2_exp
+      ml2_s
     end
 
     def ml2_s
