@@ -43,7 +43,7 @@ module ML2
     end
 
     def var1 k
-      Var1.new(k, @env[-1][1], self)
+      Var1.new(k, @env[-1].clone[1], self)
     end
 
     def add! k, v
@@ -88,7 +88,7 @@ module ML2
     end
 
     def ml2_s
-      @env.ml2_s + "let #{@name} = #{@e1.ml2_s} in #{@e2.ml2_s}"
+      @env.ml2_s + "let #{@name} = #{@e1.ml2_exp} in #{@e2.ml2_s}"
     end
 
     def env! value
@@ -122,11 +122,14 @@ module ML2
     end
 
     def varize e1
-      if e1.is_a?(CALL) && e1.env.nil?
-        env = @env.clone
-        e1.env = env
-      end
-      if e1.is_a? String
+      if e1.is_a?(CALL)
+        if e1.env.nil?
+          env = @env.clone
+          e1 = e1.clone
+          e1.env = env
+        end
+        e1 = e1.step
+      elsif e1.is_a? String
         return @env.var1 e1 if @env.var1? e1
         return @env.var2 e1 if @env.var2? e1
       end
@@ -178,10 +181,24 @@ module ML2
       @e2 = varize e2
       local_env = env.clone
       local_env.add!(@e1.e2.param, @e2)
+      exp = @e1.e2.exp
+      @e1.e2.exp = exp.class.new(exp.e1, exp.e2)
       @e1.e2.exp.env = local_env
     end
 
-    def value
+    def ml2_exp
+      "#{@e1.ml2_exp} #{@e2.ml2_exp}"
+    end
+
+    def ml2_s
+      prepare
+      return "#{@env.ml2_s}#{@e1.ml2_exp} #{@e2.ml2_exp} evalto #{ml2_value} by E-App {\n" +
+             prepare_ml2_s(@e1) +
+             prepare_ml2_s(@e2) +
+             "};\n"
+    end
+
+    def ml2_value
       @e1.e2.exp.step.ml2_value
     end
   end
@@ -197,6 +214,11 @@ module ML2
       @env = env
     end
 
+    def env! lst
+      @env = Env.new.env! lst
+      self
+    end
+
     def step
       EFUN.new(@param, @exp, @env)
     end
@@ -207,7 +229,7 @@ module ML2
   end
 
   class EFUN
-    attr_accessor :param, :exp, :env
+    attr_accessor :param, :exp
     def initialize(param, exp, env)
       @param = param
       @exp = exp
